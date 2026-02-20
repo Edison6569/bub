@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Happy Birthday, Bub 🤍</title>
+  <style>
+    :root{
+      --pink-1:#ffe0ee;
+      --pink-2:#ffd0e6;
+      --pink-3:#ffc2dc;
+      --text:#3a2f35;
+
+      /* confirmation anger tint (only used there) */
+      --anger-0: rgba(255, 60, 120, 0.00);
+      --anger-1: rgba(255, 60, 120, 0.14);
+      --anger-2: rgba(255, 60, 120, 0.26);
+      --anger-3: rgba(255, 60, 120, 0.38);
+      --anger-4: rgba(255, 60, 120, 0.52);
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: linear-gradient(135deg, var(--pink-1), var(--pink-2));
+      overflow-x: hidden;
+      scroll-behavior: smooth;
+    }
+
+    /* Fixed background layers */
+    #bgLayers{
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Photo rain layer (memory rewind) */
+    #photoRain {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      opacity: 0;             /* off until we start it */
+      transition: opacity 900ms ease;
+    }
+
+    /* Soft veil to keep text readable while photos move */
+    #veil {
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(0px);
+      opacity: 0;
+      transition: opacity 900ms ease;
+    }
+
+    /* Heart rain layer */
+    #heartRain {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: opacity 500ms ease;
+    }
+
+    /* Anger tint (only for NO clicks) */
+    #angerTint{
+      position: absolute;
+      inset: 0;
+      background: var(--anger-0);
+      opacity: 1;
+      transition: background 220ms ease;
+      mix-blend-mode: multiply;
+    }
+
+    /* Page content */
+    .wrap{
+      position: relative;
+      z-index: 1;
+    }
+
+    .section{
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 18px;
+      box-sizing: border-box;
+    }
+
+    .card{
+      width: min(820px, 92vw);
+      background: rgba(255,255,255,0.50);
+      border: 1px solid rgba(255,255,255,0.55);
+      border-radius: 22px;
+      padding: 28px 22px;
+      box-shadow: 0 14px 40px rgba(0,0,0,0.08);
+      backdrop-filter: blur(8px);
+    }
+
+    .title{
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin: 0 0 12px 0;
+      line-height: 1.1;
+      font-size: clamp(28px, 4vw, 44px);
+    }
+
+    .subtitle{
+      margin: 0 0 16px 0;
+      font-size: clamp(14px, 1.8vw, 18px);
+      opacity: 0.92;
+      line-height: 1.6;
+    }
+
+    .btnRow{
+      display:flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+      align-items: center;
+    }
+
+    button{
+      border: none;
+      border-radius: 999px;
+      padding: 12px 18px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 140ms ease, filter 140ms ease;
+      user-select: none;
+    }
+    button:hover { transform: translateY(-1px); filter: brightness(0.98); }
+    button:active{ transform: translateY(0px) scale(0.99); }
+
+    .btnPrimary{
+      background: #ff7fb0;
+      color: white;
+    }
+    .btnSoft{
+      background: rgba(255, 127, 176, 0.18);
+      color: #7c2b46;
+      border: 1px solid rgba(255, 127, 176, 0.35);
+    }
+
+    /* Scroll reveal lines */
+    .lines{
+      margin-top: 18px;
+      display: grid;
+      gap: 10px;
+    }
+    .revealLine{
+      font-size: clamp(16px, 2.1vw, 20px);
+      line-height: 1.55;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 700ms ease, transform 700ms ease;
+    }
+    .revealLine.on{
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .spacer{
+      height: 24vh;
+    }
+
+    /* Confirmation buttons */
+    .confirmBox{
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+      align-items: center;
+      justify-items: center;
+    }
+    .confirmBtns{
+      display:flex;
+      gap: 14px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      position: relative;
+      width: 100%;
+    }
+    #noBtn{
+      font-size: 22px;
+      padding: 18px 34px;
+      background: rgba(255, 60, 120, 0.20);
+      border: 1px solid rgba(255, 60, 120, 0.30);
+      color: #6d1030;
+      border-radius: 18px;
+      transform-origin: center;
+    }
+    #yesBtn{
+      font-size: 12px;
+      padding: 6px 10px;
+      background: #ff7fb0;
+      color: white;
+      border-radius: 999px;
+    }
+    .tinyHint{
+      font-size: 13px;
+      opacity: 0.85;
+      text-align: center;
+    }
+
+    /* Cat */
+    #catWrap{
+      display:none;
+      margin-top: 14px;
+      text-align: center;
+    }
+    #catWrap img{
+      width: min(220px, 55vw);
+      border-radius: 18px;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.10);
+    }
+    #catText{
+      margin-top: 10px;
+      font-weight: 800;
+      color: #6d1030;
+    }
+
+    /* Cake */
+    .cakeArea{
+      display:grid;
+      gap: 16px;
+      justify-items: center;
+      margin-top: 18px;
+    }
+    #cake{
+      width: min(520px, 92vw);
+      height: 260px;
+      position: relative;
+      border-radius: 22px;
+      background: rgba(255,255,255,0.45);
+      border: 1px solid rgba(255,255,255,0.55);
+      backdrop-filter: blur(10px);
+      overflow: hidden;
+      box-shadow: 0 14px 40px rgba(0,0,0,0.08);
+      display:flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 26px;
+    }
+
+    /* UPGRADED: Cake base layered look */
+    .cakeBase{
+      width: 78%;
+      height: 120px;
+      border-radius: 12px 12px 18px 18px;
+      background: linear-gradient(
+        to bottom,
+        rgba(255, 127, 176, 0.45) 0%,
+        rgba(255, 127, 176, 0.45) 40%,
+        rgba(255, 255, 255, 0.7) 40%,
+        rgba(255, 255, 255, 0.7) 50%,
+        rgba(255, 127, 176, 0.45) 50%,
+        rgba(255, 127, 176, 0.45) 100%
+      );
+      position: relative;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+    }
+
+    /* UPGRADED: Cake Icing with cute drips */
+    .cakeIcing{
+      position:absolute;
+      top: -6px;
+      left: -2%;
+      width: 104%;
+      height: 38px;
+      border-radius: 20px;
+      background: #ffffff;
+      box-shadow: 0 6px 10px rgba(255, 127, 176, 0.15);
+    }
+    .cakeIcing::before {
+      content: "";
+      position: absolute;
+      top: 15px;
+      left: 18%;
+      width: 18px;
+      height: 30px;
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 6px 8px rgba(255, 127, 176, 0.15);
+    }
+    .cakeIcing::after {
+      content: "";
+      position: absolute;
+      top: 20px;
+      right: 22%;
+      width: 22px;
+      height: 40px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 6px 8px rgba(255, 127, 176, 0.15);
+    }
+
+    /* UPGRADED & LOWERED: Candles row */
+    .candles{
+      position:absolute;
+      top: 66px; /* Moved down so they sit flush in the icing! */
+      left: 50%;
+      transform: translateX(-50%);
+      width: 75%;
+      display:flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 0 8px;
+      z-index: 2;
+    }
+    
+    /* UPGRADED: Striped rounded candles */
+    .candle{
+      width: 12px;
+      height: 48px;
+      border-radius: 6px;
+      background: repeating-linear-gradient(
+        -45deg,
+        #ffffff,
+        #ffffff 5px,
+        #ff7fb0 5px,
+        #ff7fb0 10px
+      );
+      box-shadow: 2px 4px 8px rgba(0,0,0,0.08);
+      position: relative;
+    }
+
+    /* RESTORED: Face-flame pop */
+    .flameFace{
+      position:absolute;
+      left: 50%;
+      top: -44px;
+      transform: translateX(-50%) scale(0);
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      object-fit: cover;
+      box-shadow: 0 10px 18px rgba(0,0,0,0.18);
+      opacity: 0;
+    }
+    .flameFace.on{
+      animation: popFace 560ms cubic-bezier(.18,.95,.2,1.15) forwards, flicker 1200ms ease-in-out 560ms infinite;
+    }
+
+    @keyframes popFace{
+      0%   { transform: translateX(-50%) scale(0.0); opacity: 0; }
+      70%  { transform: translateX(-50%) scale(1.15); opacity: 1; }
+      100% { transform: translateX(-50%) scale(1.0); opacity: 1; }
+    }
+    @keyframes flicker{
+      0%,100% { transform: translateX(-50%) scale(1.0) rotate(-2deg); }
+      50%     { transform: translateX(-50%) scale(1.03) rotate(2deg); }
+    }
+
+    /* Falling photos */
+    .fallPhoto{
+      position: absolute;
+      top: -120px;
+      border-radius: 14px;
+      object-fit: cover;
+      box-shadow: 0 18px 38px rgba(0,0,0,0.10);
+      will-change: transform;
+      pointer-events: none;
+    }
+
+    /* Heart particles */
+    .heart{
+      position:absolute;
+      top: -30px;
+      font-size: 18px;
+      opacity: 0.9;
+      filter: drop-shadow(0 10px 10px rgba(0,0,0,0.12));
+      will-change: transform;
+      pointer-events: none;
+    }
+
+    /* Small footer line */
+    .small{
+      font-size: 13px;
+      opacity: 0.85;
+      margin-top: 10px;
+    }
+
+    /* Hide sections until navigated */
+    .hidden { display: none; }
+
+    /* Make “phone site” feel: extra space between reveal blocks */
+    .tallPad { padding-top: 18px; padding-bottom: 18px; }
+
+  </style>
+</head>
+<body>
+
+  <div id="bgLayers">
+    <div id="photoRain"></div>
+    <div id="veil"></div>
+    <div id="heartRain"></div>
+    <div id="angerTint"></div>
+  </div>
+
+  <div class="wrap">
+
+    <section class="section" id="secIntro">
+      <div class="card">
+        <h1 class="title">Happy Birthday, Bub 🤍<br/>The person I love the most.</h1>
+        <p class="subtitle">So… I made this for you.</p>
+
+        <div class="btnRow">
+          <button class="btnPrimary" id="startBtn">Click me if you love me 💗</button>
+        </div>
+
+        <p class="small">Scroll works best in full screen on a laptop/PC, but phone is fine too.</p>
+      </div>
+    </section>
+
+    <section class="section hidden" id="secExplain">
+      <div class="card">
+        <h2 class="title" style="font-size: clamp(24px,3.2vw,36px);">Before anything…</h2>
+        <p class="subtitle">
+          I’m sorry I couldn’t spend money on your birthday and Valentine’s this year.
+          Studies and the things I needed to buy really took a lot, but I still wanted to make today meaningful.
+        </p>
+        <p class="subtitle">
+          I know this isn’t wrapped in a box… but it’s wrapped with love.  
+          Maybe next year, it’ll be wrapped with me. 🤍
+        </p>
+
+        <div class="btnRow">
+          <button class="btnPrimary" id="toPhotosBtn">Continue 💗</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section hidden" id="secRomantic">
+      <div class="card tallPad">
+        <h2 class="title" style="font-size: clamp(22px,3vw,34px);">This is the second birthday with you.</h2>
+        <p class="subtitle">
+          Even if I can’t give you something big right now, I still want this day to feel special —
+          something you can come back to and remember.
+        </p>
+
+        <div class="spacer"></div>
+
+        <div class="lines" id="romanticLines">
+          <div class="revealLine">Not a day goes by…</div>
+          <div class="revealLine">where I don’t think about you.</div>
+          <div class="revealLine">or miss you.</div>
+          <div class="revealLine">or love you.</div>
+          <div class="revealLine">this pretty face.</div>
+          <div class="revealLine">this beautiful human being.</div>
+          <div class="revealLine">I’m grateful you’re here with me.</div>
+          <div class="revealLine">hopefully for many more years.</div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="btnRow">
+          <button class="btnPrimary" id="keepGoingBtn">Keep going 💗</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section hidden" id="secSerious">
+      <div class="card tallPad">
+        <h2 class="title" style="font-size: clamp(22px,3vw,34px);">And honestly…</h2>
+
+        <div class="spacer"></div>
+
+        <div class="lines" id="seriousLines">
+          <div class="revealLine">We fought sometimes.</div>
+          <div class="revealLine">and we argued.</div>
+          <div class="revealLine">but I never stopped choosing you.</div>
+          <div class="revealLine">I still love you a lot.</div>
+          <div class="revealLine">I’m grateful to have you.</div>
+          <div class="revealLine">I hope you have a beautiful birthday today.</div>
+          <div class="revealLine">eat as much as you want 😌</div>
+          <div class="revealLine">and please get well soon.</div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="btnRow">
+          <button class="btnPrimary" id="toConfirmBtn">Continue 💗</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section hidden" id="secConfirm">
+      <div class="card">
+        <h2 class="title" style="font-size: clamp(22px,3vw,34px);">Are you sure you really love me?</h2>
+        <p class="subtitle">Choose carefully. 😌</p>
+
+        <div class="confirmBox">
+          <div class="confirmBtns">
+            <button id="noBtn">NO 😤</button>
+            <button id="yesBtn">yes… 💗</button>
+          </div>
+
+          <div class="tinyHint">why are u not clicking this?</div>
+
+          <div id="catWrap">
+            <img src="cat-no.gif" alt="cat saying no"/>
+            <div id="catText">no.</div>
+          </div>
+
+          <div class="btnRow" style="justify-content:center; margin-top: 10px;">
+            <button class="btnSoft" id="resetAngerBtn">okay okay 😭</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section hidden" id="secCake">
+      <div class="card">
+        <h2 class="title" style="font-size: clamp(24px,3.2vw,36px);">One last thing…</h2>
+        <p class="subtitle">Scroll a little and you’ll see it.</p>
+
+        <div class="spacer"></div>
+
+        <div class="cakeArea">
+          <div id="cake">
+            <div class="candles" id="candlesRow"></div>
+            <div class="cakeBase">
+              <div class="cakeIcing"></div>
+            </div>
+          </div>
+
+          <button class="btnPrimary" id="lightBtn">Light it up 🔥</button>
+
+          <div style="text-align:center; margin-top:6px;">
+            <div style="font-weight:900; font-size: clamp(18px,2.4vw,22px);">
+              Happy Birthday, Bub. I love you.
+            </div>
+            <div class="small" style="margin-top:10px;">
+              I hope you like this. <br/>
+              I know it isn’t much… but it’s everything I could do for now.
+            </div>
+            <div class="small" style="margin-top:10px; opacity:0.78;">made with love.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+<script>
+/* =========================
+   FILES YOU NEED IN FOLDER
+   ========================= */
+const PHOTO_FILES = [
+  "pic1.jpg","pic2.jpg","pic3.jpg","pic4.jpg","pic5.jpg",
+  "pic6.jpg","pic7.jpg","pic8.jpg","pic9.jpg","pic10.jpg"
+];
+const FACE_FILE = "face.png";   // used for all 7 candle “flames”
+const CANDLE_COUNT = 7;
+
+/* =========================
+   ELEMENTS
+   ========================= */
+const secIntro   = document.getElementById("secIntro");
+const secExplain = document.getElementById("secExplain");
+const secRom     = document.getElementById("secRomantic");
+const secSer     = document.getElementById("secSerious");
+const secConf    = document.getElementById("secConfirm");
+const secCake    = document.getElementById("secCake");
+
+const startBtn   = document.getElementById("startBtn");
+const toPhotosBtn= document.getElementById("toPhotosBtn");
+const keepGoingBtn = document.getElementById("keepGoingBtn");
+const toConfirmBtn = document.getElementById("toConfirmBtn");
+
+const noBtn      = document.getElementById("noBtn");
+const yesBtn     = document.getElementById("yesBtn");
+const resetAngerBtn = document.getElementById("resetAngerBtn");
+const catWrap    = document.getElementById("catWrap");
+const catText    = document.getElementById("catText");
+
+const photoRain  = document.getElementById("photoRain");
+const veil       = document.getElementById("veil");
+const heartRain  = document.getElementById("heartRain");
+const angerTint  = document.getElementById("angerTint");
+
+const romanticLines = document.querySelectorAll("#romanticLines .revealLine");
+const seriousLines  = document.querySelectorAll("#seriousLines .revealLine");
+
+const candlesRow = document.getElementById("candlesRow");
+const lightBtn   = document.getElementById("lightBtn");
+
+/* =========================
+   NAV / SHOW-HIDE
+   ========================= */
+function showSection(sectionEl){
+  sectionEl.classList.remove("hidden");
+  // scroll to it smoothly
+  sectionEl.scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+/* =========================
+   HEART RAIN (Intro click)
+   ========================= */
+let heartTimer = null;
+
+function spawnHeart(){
+  const h = document.createElement("div");
+  h.className = "heart";
+  h.textContent = "💗";
+
+  const x = Math.random() * 100;
+  const size = 14 + Math.random() * 18;
+  const duration = 3.5 + Math.random() * 2.5;
+  const drift = (Math.random() * 80) - 40;
+
+  h.style.left = x + "vw";
+  h.style.fontSize = size + "px";
+
+  const startRot = (Math.random()*40)-20;
+  h.style.transform = `translateY(-30px) translateX(0px) rotate(${startRot}deg)`;
+
+  heartRain.appendChild(h);
+
+  const start = performance.now();
+  function anim(now){
+    const t = (now - start) / (duration*1000);
+    if(t >= 1){
+      h.remove();
+      return;
+    }
+    const y = t * (window.innerHeight + 180);
+    const x2 = drift * Math.sin(t * Math.PI);
+    const rot = startRot + 20 * Math.sin(t*2*Math.PI);
+    h.style.transform = `translateY(${y}px) translateX(${x2}px) rotate(${rot}deg)`;
+    h.style.opacity = String(0.9 - t*0.6);
+    requestAnimationFrame(anim);
+  }
+  requestAnimationFrame(anim);
+}
+
+function startHeartRain(){
+  heartRain.style.opacity = "1";
+
+  // heavy burst for ~2 seconds, then slow
+  let phase = "burst";
+  let burstEnd = Date.now() + 2000;
+
+  heartTimer = setInterval(() => {
+    const now = Date.now();
+    if(phase === "burst"){
+      // spawn a bunch quickly
+      for(let i=0;i<6;i++) spawnHeart();
+      if(now > burstEnd) phase = "slow";
+    } else {
+      // slower continuous
+      spawnHeart();
+      if(Math.random() < 0.35) spawnHeart();
+    }
+  }, 160);
+}
+
+function stopHeartRain(){
+  if(heartTimer) clearInterval(heartTimer);
+  heartTimer = null;
+  heartRain.style.opacity = "0";
+  // clear existing hearts after fade
+  setTimeout(()=> heartRain.innerHTML = "", 700);
+}
+
+/* =========================
+   PHOTO RAIN (Memory rewind)
+   - Mode changes: romantic vs serious
+   ========================= */
+let photoMode = "off"; // "romantic" | "serious" | "off"
+let photoSpawnTimer = null;
+let photoIndexBag = [];
+
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+  return arr;
+}
+
+function refillBag(){
+  photoIndexBag = shuffle([...PHOTO_FILES]);
+}
+
+function nextPhotoFile(){
+  if(photoIndexBag.length === 0) refillBag();
+  return photoIndexBag.pop();
+}
+
+function spawnFallingPhoto(profile){
+  const img = document.createElement("img");
+  img.className = "fallPhoto";
+  img.src = nextPhotoFile();
+
+  const startX = Math.random()*100; // vw
+  const w = profile.sizeMin + Math.random()*(profile.sizeMax-profile.sizeMin);
+  const rot = (Math.random()*18)-9;
+
+  const fallDuration = profile.fallMin + Math.random()*(profile.fallMax-profile.fallMin);
+  const swayAmp = profile.swayAmpMin + Math.random()*(profile.swayAmpMax-profile.swayAmpMin);
+  const swaySpeed = profile.swaySpeedMin + Math.random()*(profile.swaySpeedMax-profile.swaySpeedMin);
+  const opacity = profile.opacityMin + Math.random()*(profile.opacityMax-profile.opacityMin);
+
+  img.style.left = startX + "vw";
+  img.style.width = w + "px";
+  img.style.height = (w*1.20) + "px"; // slightly portrait-ish
+  img.style.transform = `translateY(-140px) rotate(${rot}deg)`;
+  img.style.opacity = opacity.toFixed(2);
+
+  photoRain.appendChild(img);
+
+  const start = performance.now();
+  const screenH = window.innerHeight + 260;
+  function anim(now){
+    const t = (now - start) / (fallDuration*1000);
+    if(t >= 1){
+      img.remove();
+      return;
+    }
+    const y = t * screenH;
+    // left-to-right sway (memory rewind vibe)
+    const sway = swayAmp * Math.sin(t * Math.PI * 2 * swaySpeed);
+    img.style.transform = `translateY(${y}px) translateX(${sway}px) rotate(${rot}deg)`;
+    requestAnimationFrame(anim);
+  }
+  requestAnimationFrame(anim);
+}
+
+const PROFILES = {
+  romantic: {
+    spawnMs: 320,   // steady but not chaotic
+    fallMin: 10,
+    fallMax: 14,
+    sizeMin: 80,
+    sizeMax: 150,
+    swayAmpMin: 18,
+    swayAmpMax: 45,
+    swaySpeedMin: 0.55,
+    swaySpeedMax: 1.05,
+    opacityMin: 0.28,
+    opacityMax: 0.45
+  },
+  serious: {
+    spawnMs: 620,   // slower spawn
+    fallMin: 16,
+    fallMax: 22,    // slower fall
+    sizeMin: 80,
+    sizeMax: 150,
+    swayAmpMin: 12,
+    swayAmpMax: 32,
+    swaySpeedMin: 0.45,
+    swaySpeedMax: 0.85,
+    opacityMin: 0.16, // more faded
+    opacityMax: 0.28
+  }
+};
+
+function startPhotoRain(mode){
+  photoMode = mode;
+  photoRain.style.opacity = "1";
+  veil.style.opacity = "1";
+  refillBag();
+
+  if(photoSpawnTimer) clearInterval(photoSpawnTimer);
+  photoSpawnTimer = setInterval(() => {
+    if(photoMode === "romantic") spawnFallingPhoto(PROFILES.romantic);
+    if(photoMode === "serious")  spawnFallingPhoto(PROFILES.serious);
+  }, PROFILES[mode].spawnMs);
+}
+
+function setPhotoMode(mode){
+  photoMode = mode;
+  if(photoSpawnTimer) clearInterval(photoSpawnTimer);
+  photoSpawnTimer = setInterval(() => {
+    if(photoMode === "romantic") spawnFallingPhoto(PROFILES.romantic);
+    if(photoMode === "serious")  spawnFallingPhoto(PROFILES.serious);
+  }, PROFILES[mode].spawnMs);
+}
+
+function stopPhotoRain(){
+  photoMode = "off";
+  if(photoSpawnTimer) clearInterval(photoSpawnTimer);
+  photoSpawnTimer = null;
+  photoRain.style.opacity = "0";
+  veil.style.opacity = "0";
+  // don't aggressively clear; let them finish and remove naturally
+}
+
+/* =========================
+   SCROLL REVEAL (phone-site feel)
+   ========================= */
+const io = new IntersectionObserver((entries)=>{
+  for(const e of entries){
+    if(e.isIntersecting){
+      e.target.classList.add("on");
+      io.unobserve(e.target);
+    }
+  }
+}, { threshold: 0.22 });
+
+function observeLines(nodeList){
+  nodeList.forEach(el => io.observe(el));
+}
+
+/* =========================
+   CONFIRMATION (NO makes redder + cat)
+   ========================= */
+let angerLevel = 0;
+
+function setAngerTint(level){
+  // clamp 0..4
+  const l = Math.max(0, Math.min(4, level));
+  const varName = `--anger-${l}`;
+  angerTint.style.background = getComputedStyle(document.documentElement).getPropertyValue(varName);
+}
+
+function showCat(msg){
+  catWrap.style.display = "block";
+  catText.textContent = msg;
+}
+
+function resetAnger(){
+  angerLevel = 0;
+  setAngerTint(0);
+  catWrap.style.display = "none";
+}
+
+/* =========================
+   CAKE SETUP + LIGHT (RESTORED FACE)
+   ========================= */
+function buildCandles(){
+  candlesRow.innerHTML = "";
+  for(let i=0;i<CANDLE_COUNT;i++){
+    const c = document.createElement("div");
+    c.className = "candle";
+
+    // Restored the face.png image element
+    const flame = document.createElement("img");
+    flame.className = "flameFace";
+    flame.src = FACE_FILE;
+    flame.alt = "flame face";
+
+    c.appendChild(flame);
+    candlesRow.appendChild(c);
+  }
+}
+
+function lightCake(){
+  const flames = document.querySelectorAll(".flameFace");
+  flames.forEach((f, idx) => {
+    // slight stagger
+    setTimeout(()=> f.classList.add("on"), idx*90);
+  });
+}
+
+/* =========================
+   BUTTON EVENTS
+   ========================= */
+startBtn.addEventListener("click", () => {
+  // Start heart rain burst + show next section
+  startHeartRain();
+
+  // keep theme pink (no red here)
+  // reveal explanation
+  showSection(secExplain);
+  secExplain.classList.remove("hidden");
+
+  // soften heart rain after a bit
+  setTimeout(()=> {
+    // keep a little longer then fade
+    stopHeartRain();
+  }, 6500);
+});
+
+toPhotosBtn.addEventListener("click", () => {
+  // show romantic section + start photo rain in romantic mode
+  secRom.classList.remove("hidden");
+  showSection(secRom);
+
+  // Start photo rain behind the romantic lines
+  startPhotoRain("romantic");
+  observeLines(romanticLines);
+});
+
+keepGoingBtn.addEventListener("click", () => {
+  // go to serious section
+  secSer.classList.remove("hidden");
+  showSection(secSer);
+
+  // slow & fade the photos (serious mode)
+  setPhotoMode("serious");
+  observeLines(seriousLines);
+});
+
+toConfirmBtn.addEventListener("click", () => {
+  // show confirmation
+  secConf.classList.remove("hidden");
+  showSection(secConf);
+
+  // IMPORTANT: Only here do we allow red tint changes via angerTint
+  resetAnger();
+});
+
+noBtn.addEventListener("click", () => {
+  angerLevel++;
+  if(angerLevel > 4) angerLevel = 4;
+  setAngerTint(angerLevel);
+
+  // Show cat wagging no + escalating message
+  const msgs = ["no.", "wrong answer.", "try again.", "seriously?", "click the other one. 😤"];
+  showCat(msgs[Math.min(angerLevel, msgs.length-1)]);
+
+  // Slight punch animation
+  noBtn.animate([
+    { transform: "scale(1.00)" },
+    { transform: "scale(1.03)" },
+    { transform: "scale(1.00)" }
+  ], { duration: 220, easing: "ease-out" });
+});
+
+yesBtn.addEventListener("click", () => {
+  // calm back to pink
+  setAngerTint(0);
+  // move to final cake
+  secCake.classList.remove("hidden");
+  showSection(secCake);
+
+  // keep photos falling in background very faint OR stop
+  setPhotoMode("serious");
+  // reduce veil slightly for cleaner cake view
+  veil.style.opacity = "0.65";
+});
+
+resetAngerBtn.addEventListener("click", () => {
+  resetAnger();
+});
+
+/* Cake light */
+lightBtn.addEventListener("click", () => {
+  lightCake();
+  // Optional: disable after lighting
+  lightBtn.disabled = true;
+  lightBtn.textContent = "Lit ✨";
+  lightBtn.style.filter = "brightness(0.95)";
+});
+
+/* =========================
+   INIT
+   ========================= */
+buildCandles();
+setAngerTint(0);
+
+</script>
+</body>
+</html>
